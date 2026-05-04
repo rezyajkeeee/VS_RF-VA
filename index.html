@@ -116,7 +116,7 @@
             <option value="КПП-2 (проходная)">КПП-2 (проходная)</option>
             <option value="Штаб" selected>Штаб</option>
             <option value="Вышка №1" selected>Вышка №1</option>
-            <option value="Вышка №1" selected>Вышка №1</option>
+            <option value="Вышка №5" selected>Вышка №5</option>
         </select>
     </div>
     
@@ -183,7 +183,7 @@
                     
                     // Рассчитываем следующее время отчета
                     if (lastReportTime) {
-                        const nextReport = new Date(lastReportTime.getTime() + 15 * 60 * 1000);
+                        const nextReport = new Date(lastReportTime.getTime() + 20 * 60 * 1000);
                         nextReportTime = nextReport;
                         document.getElementById('nextReportTime').textContent = formatTime(nextReport);
                     }
@@ -318,8 +318,8 @@
             
             updateReports();
             
-            // Устанавливаем время следующего отчета (текущее время + 15 минут)
-            setNextReportTime(15);
+            // Устанавливаем время следующего отчета (текущее время + 20 минут)
+            setNextReportTime(20);
             
             // Запускаем проверку напоминания
             if (reminderCheckInterval) clearInterval(reminderCheckInterval);
@@ -440,7 +440,7 @@
         
         document.getElementById('reportSubmittedBtn').addEventListener('click', function() {
             if (isPostActive) {
-                setNextReportTime(15);
+                setNextReportTime(20);
             }
         });
         
