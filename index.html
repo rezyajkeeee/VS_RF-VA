@@ -379,9 +379,11 @@
             const currentTimeFormatted = formatTime(currentTime);
             
             // Создаем отчеты
-            const report1 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Заступил на пост, Время ${startTimeFormatted} | Доклад окончен`;
-            const report2 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Время на посту ${calculateTimeOnPost()} | Доклад окончен`;
-            const report3 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Сдал пост, Время ${currentTimeFormatted} | Доклад окончен`;
+            const report1 = `Докладывает ${rank} ${name} | Пост ${postName} заступил | Состав - ${composition} | Код - 1 | Доклад окончен`;
+            const report2 = `Докладывает ${rank} ${name} | Пост ${postName} | Минуты 20 | Состав - ${composition} | Код - 1 | Доклад окончен`;
+            const report3 = `Докладывает ${rank} ${name} | Пост ${postName} | Минуты 40 | Состав - ${composition} | Код - 1 | Доклад окончен`;
+            const report4 = `Докладывает ${rank} ${name} | Пост ${postName} | Минуты 60 | Состав - ${composition} | Код - 1 | Доклад окончен`;
+            const report5 = `Докладывает ${rank} ${name} | Пост ${postName} сдал | Состав - ${composition} | Код - 1 | Доклад окончен`;
             
             // Очищаем контейнер
             const container = document.getElementById('reportContainer');
@@ -389,8 +391,10 @@
             
             // Добавляем блоки с отчетами
             container.appendChild(createReportBlock(report1, '1. Доклад о заступлении на пост'));
-            container.appendChild(createReportBlock(report2, '2. Текущий доклад'));
-            container.appendChild(createReportBlock(report3, '3. Доклад о сдаче поста'));
+            container.appendChild(createReportBlock(report2, '2. 20 минут на посту'));
+            container.appendChild(createReportBlock(report3, '3. 40 минут на посту'));
+            container.appendChild(createReportBlock(report4, '4. 60 минут на посту'));
+            container.appendChild(createReportBlock(report5, '5. Доклад о сдаче поста'));
             
             // Показываем индикатор обновления
             const loadingIndicator = document.getElementById('loadingIndicator');
