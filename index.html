@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор доклада</title>
+    <style>
+        /* Стили остаются без изменений */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .report-block {
+            margin-top: 8px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 10px;
+            background-color: #2196F3;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background-color: #0b7dda;
+        }
+        .copy-btn.copied {
+            background-color: #9E9E9E;
+        }
+        .reminder {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ff9800;
+            background-color: #fff3e0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .post-image {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .post-image img {
+            max-width: 100%;
+            height: auto;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .report-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Генератор доклада</h1>
+    
+    <div class="form-group">
+        <label for="composition">Состав (цифрой):</label>
+        <input type="number" id="composition" min="1" max="9" value="1">
+    </div>
+    
+    <div class="form-group">
+        <label for="postName">Название поста:</label>
+        <select id="postName">
+            <option value="КПП-1">КПП-1</option>
+            <option value="КПП-2" selected>КПП-2</option>
+            <option value="КПП-3">КПП-3</option>
+            <option value="Дом Правительства">Дом Правительства</option>
+            <option value="Холл ФСО">Холл ФСО</option>
+            <option value="Вечный огонь">Вечный огонь</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="rank">Звание:</label>
+        <select id="rank">
+            <option value="Рядовой">Рядовой</option>
+            <option value="Ефрейтор">Ефрейтор</option>
+            <option value="Мл. сержант">Младший сержант</option>
+            <option value="Сержант" selected>Сержант</option>
+            <option value="Ст. сержант">Старший сержант</option>
+            <option value="Старшина">Старшина</option>
+            <option value="Прапорщик">Прапорщик</option>
+            <option value="Ст. прапорщик">Старший прапорщик</option>
+            <option value="Мл. лейтенант">Младший лейтенант</option>
+            <option value="Лейтенант">Лейтенант</option>
+            <option value="Ст. лейтенант">Старший лейтенант</option>
+            <option value="Капитан">Капитан</option>
+            <option value="Майор">Майор</option>
+            <option value="Подполковник">Подполковник</option>
+            <option value="Полковник">Полковник</option>
+            <option value="Генерал-лейтенант">Генерал-лейтенант</option>
+          </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="name">ФИО:</label>
+        <input type="text" id="name" value="Имя Фамилия">
+    </div>
+    
+    <button id="generateBtn">Сгенерировать доклад</button>
+    <span id="loadingIndicator" class="loading" style="display: none;"></span>
+    
+    <div class="report-container" id="reportContainer">
+        <!-- Блоки отчетов будут добавляться сюда -->
+    </div>
+    
+    <div class="reminder" id="reminder">
+        Следующий отчет в: <span id="nextReportTime">--:--</span>
+        <button id="reportSubmittedBtn">Отчет подан</button>
+    </div>
+    
+    <div class="post-image">
+        <img src="posts.png" alt="Посты">
+    </div>
+    
+    <audio id="reminderSound" src="reminder.mp3" preload="auto"></audio>
+    
+    <script>
+        let startTime = null;
+        let updateInterval = null;
+        let nextReportTime = null;
+        let reminderCheckInterval = null;
+        let lastMinuteChecked = null;
+        let isPostActive = false;
+        let lastReportTime = null;
+        
+        // Загрузка сохраненных данных при запуске
+        function loadFromLocalStorage() {
+            const savedRank = localStorage.getItem('postReport_rank');
+            const savedName = localStorage.getItem('postReport_name');
+            const savedPostName = localStorage.getItem('postReport_postName');
+            const savedPostState = localStorage.getItem('postReport_postState');
+            const savedComposition = localStorage.getItem('postReport_composition');
+            
+            if (savedRank) document.getElementById('rank').value = savedRank;
+            if (savedName) document.getElementById('name').value = savedName;
+            if (savedPostName) document.getElementById('postName').value = savedPostName;
+            if (savedComposition) document.getElementById('composition').value = savedComposition;
+            
+            if (savedPostState) {
+                const state = JSON.parse(savedPostState);
+                if (state.isActive) {
+                    startTime = new Date(state.startTime);
+                    lastReportTime = state.lastReportTime ? new Date(state.lastReportTime) : null;
+                    isPostActive = true;
+                    document.getElementById('generateBtn').textContent = 'Завершить пост';
+                    
+                    // Рассчитываем следующее время отчета
+                    if (lastReportTime) {
+                        const nextReport = new Date(lastReportTime.getTime() + 15 * 60 * 1000);
+                        nextReportTime = nextReport;
+                        document.getElementById('nextReportTime').textContent = formatTime(nextReport);
+                    }
+                    
+                    // Восстанавливаем интервалы
+                    lastMinuteChecked = getMoscowTime().getUTCMinutes();
+                    updateReports();
+                    reminderCheckInterval = setInterval(checkReminder, 1000);
+                    updateInterval = setInterval(checkMinuteChange, 1000);
+                }
+            }
+        }
+        
+        // Сохранение данных в localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('postReport_rank', document.getElementById('rank').value);
+            localStorage.setItem('postReport_name', document.getElementById('name').value);
+            localStorage.setItem('postReport_postName', document.getElementById('postName').value);
+            localStorage.setItem('postReport_composition', document.getElementById('composition').value);
+            
+            const postState = {
+                isActive: isPostActive,
+                startTime: startTime ? startTime.getTime() : null,
+                lastReportTime: lastReportTime ? lastReportTime.getTime() : null
+            };
+            localStorage.setItem('postReport_postState', JSON.stringify(postState));
+        }
+        
+        // Обработчики изменений для сохранения
+        document.getElementById('rank').addEventListener('input', saveToLocalStorage);
+        document.getElementById('name').addEventListener('input', saveToLocalStorage);
+        document.getElementById('postName').addEventListener('change', function() {
+            saveToLocalStorage();
+            if (isPostActive) updateReports();
+        });
+        document.getElementById('composition').addEventListener('change', function() {
+            saveToLocalStorage();
+            if (isPostActive) updateReports();
+        });
+        
+        function getMoscowTime() {
+            const now = new Date();
+            // Москва UTC+3
+            const moscowOffset = 3 * 60 * 60 * 1000;
+            const moscowTime = new Date(now.getTime() + moscowOffset);
+            return moscowTime;
+        }
+        
+        function formatTime(date) {
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+        
+        function pluralizeMinutes(minutes) {
+            if (minutes % 100 >= 11 && minutes % 100 <= 19) {
+                return `${minutes} минут`;
+            }
+            
+            switch(minutes % 10) {
+                case 1: return `${minutes} минута`;
+                case 2:
+                case 3:
+                case 4: return `${minutes} минуты`;
+                default: return `${minutes} минут`;
+            }
+        }
+        
+        function calculateTimeOnPost() {
+            if (!startTime) return pluralizeMinutes(0);
+            
+            const now = getMoscowTime();
+            const diffMs = now - startTime;
+            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+            
+            return pluralizeMinutes(diffMinutes);
+        }
+        
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.classList.add('copied');
+                button.disabled = true;
+                button.textContent = 'Скопировано';
+                
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.disabled = false;
+                    button.textContent = 'Копировать';
+                }, 3000);
+            }).catch(err => {
+                console.error('Ошибка копирования: ', err);
+            });
+        }
+        
+        function createReportBlock(text, title) {
+            const block = document.createElement('div');
+            block.className = 'report-block';
+            
+            const titleElem = document.createElement('strong');
+            titleElem.textContent = title;
+            block.appendChild(titleElem);
+            
+            const content = document.createElement('div');
+            content.textContent = text;
+            content.style.marginTop = '5px';
+            block.appendChild(content);
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = 'Копировать';
+            copyBtn.onclick = (e) => copyToClipboard(text, e.target);
+            block.appendChild(copyBtn);
+            
+            return block;
+        }
+        
+        function generateAllReports() {
+            if (isPostActive) {
+                // Если пост уже активен, завершаем его
+                endPost();
+                return;
+            }
+            
+            // Устанавливаем время начала поста
+            startTime = getMoscowTime();
+            lastReportTime = startTime;
+            lastMinuteChecked = startTime.getUTCMinutes();
+            isPostActive = true;
+            
+            // Меняем текст кнопки
+            document.getElementById('generateBtn').textContent = 'Завершить пост';
+            
+            updateReports();
+            
+            // Устанавливаем время следующего отчета (текущее время + 15 минут)
+            setNextReportTime(15);
+            
+            // Запускаем проверку напоминания
+            if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+            reminderCheckInterval = setInterval(checkReminder, 1000);
+            
+            // Запускаем обновление отчетов (проверяем каждую секунду, но обновляем только при смене минуты)
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(checkMinuteChange, 1000);
+            
+            saveToLocalStorage();
+        }
+        
+        function endPost() {
+            // Останавливаем все интервалы
+            if (updateInterval) clearInterval(updateInterval);
+            if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+            
+            // Сбрасываем состояние
+            isPostActive = false;
+            startTime = null;
+            lastReportTime = null;
+            lastMinuteChecked = null;
+            nextReportTime = null;
+            
+            // Меняем текст кнопки обратно
+            document.getElementById('generateBtn').textContent = 'Сгенерировать доклад';
+            
+            // Очищаем отчеты
+            document.getElementById('reportContainer').innerHTML = '';
+            
+            // Сбрасываем время следующего отчета
+            document.getElementById('nextReportTime').textContent = '--:--';
+            
+            saveToLocalStorage();
+        }
+        
+        function checkMinuteChange() {
+            const now = getMoscowTime();
+            const currentMinute = now.getUTCMinutes();
+            
+            if (currentMinute !== lastMinuteChecked) {
+                lastMinuteChecked = currentMinute;
+                updateReports();
+            }
+        }
+        
+        function updateReports() {
+            if (!isPostActive) return;
+            
+            const composition = document.getElementById('composition').value;
+            const postName = document.getElementById('postName').value;
+            const rank = document.getElementById('rank').value;
+            const name = document.getElementById('name').value;
+            
+            const currentTime = getMoscowTime();
+            const startTimeFormatted = formatTime(startTime);
+            const currentTimeFormatted = formatTime(currentTime);
+            
+            // Создаем отчеты
+            const report1 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Заступил на пост, Время ${startTimeFormatted} | Доклад окончен`;
+            const report2 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Время на посту ${calculateTimeOnPost()} | Доклад окончен`;
+            const report3 = `Докладывает ${rank} ${name} | Пост ${postName} | Состав - ${composition} | Состояние стабильное | Сдал пост, Время ${currentTimeFormatted} | Доклад окончен`;
+            
+            // Очищаем контейнер
+            const container = document.getElementById('reportContainer');
+            container.innerHTML = '';
+            
+            // Добавляем блоки с отчетами
+            container.appendChild(createReportBlock(report1, '1. Доклад о заступлении на пост'));
+            container.appendChild(createReportBlock(report2, '2. Текущий доклад'));
+            container.appendChild(createReportBlock(report3, '3. Доклад о сдаче поста'));
+            
+            // Показываем индикатор обновления
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'inline-block';
+            setTimeout(() => {
+                loadingIndicator.style.display = 'none';
+            }, 500);
+            
+            saveToLocalStorage();
+        }
+        
+        function setNextReportTime(minutesToAdd) {
+            const now = getMoscowTime();
+            lastReportTime = now;
+            nextReportTime = new Date(now.getTime() + minutesToAdd * 60 * 1000);
+            document.getElementById('nextReportTime').textContent = formatTime(nextReportTime);
+            saveToLocalStorage();
+        }
+        
+        function checkReminder() {
+            if (!isPostActive) return;
+            
+            const now = getMoscowTime();
+            if (nextReportTime && now >= nextReportTime) {
+                // Воспроизводим звук напоминания
+                const sound = document.getElementById('reminderSound');
+                sound.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+                
+                // Подсвечиваем напоминание
+                const reminder = document.getElementById('reminder');
+                reminder.style.backgroundColor = '#ffcdd2';
+                reminder.style.borderColor = '#f44336';
+                
+                // Через 5 секунд возвращаем обычный цвет
+                setTimeout(() => {
+                    reminder.style.backgroundColor = '#fff3e0';
+                    reminder.style.borderColor = '#ff9800';
+                }, 5000);
+            }
+        }
+        
+        document.getElementById('generateBtn').addEventListener('click', generateAllReports);
+        
+        document.getElementById('reportSubmittedBtn').addEventListener('click', function() {
+            if (isPostActive) {
+                setNextReportTime(15);
+            }
+        });
+        
+        // Загружаем сохраненные данные при загрузке страницы
+        window.addEventListener('load', loadFromLocalStorage);
+    </script>
+</body>
+</html>
